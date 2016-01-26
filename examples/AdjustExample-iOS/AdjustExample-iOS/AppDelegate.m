@@ -36,16 +36,6 @@
     // set an attribution delegate
     [adjustConfig setDelegate:self];
 
-    // set finished success tracking delegate
-    [adjustConfig setSuccessDelegate:^(ADJSuccessResponseData *successResponseData) {
-        NSLog(@"adjust successResponseData %@", successResponseData);
-    }];
-
-    // set finished failure tracking delegate
-    [adjustConfig setFailureDelegate:^(ADJFailureResponseData *failureResponseData) {
-        NSLog(@"adjust failureResponseData %@", failureResponseData);
-    }];
-
     [Adjust appDidLaunch:adjustConfig];
 
     // put the SDK in offline mode
@@ -57,6 +47,17 @@
     return YES;
 }
 
+- (BOOL)application:(UIApplication *)application continueUserActivity:(NSUserActivity *)userActivity
+ restorationHandler:(void (^)(NSArray *restorableObjects))restorationHandler {
+    if ([[userActivity activityType] isEqualToString:NSUserActivityTypeBrowsingWeb]) {
+        [Adjust appWillOpenUrl:[userActivity webpageURL]];
+    }
+
+    // Your code goes here
+    return YES;
+}
+
+
 - (BOOL)application:(UIApplication *)application openURL:(NSURL *)url sourceApplication:(NSString *)sourceApplication annotation:(id)annotation {
     [Adjust appWillOpenUrl:url];
 
@@ -65,6 +66,14 @@
 
 - (void)adjustAttributionChanged:(ADJAttribution *)attribution {
     NSLog(@"adjust attribution %@", attribution);
+}
+
+- (void)adjustTrackingSucceeded:(ADJSuccessResponseData *)successResponseData {
+    NSLog(@"adjust tracking succeeded %@", successResponseData);
+}
+
+- (void)adjustTrackingFailed:(ADJFailureResponseData *)failureResponseData {
+    NSLog(@"adjust tracking failed %@", failureResponseData);
 }
 
 - (void)applicationWillResignActive:(UIApplication *)application {

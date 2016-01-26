@@ -11,6 +11,7 @@
 #import "ADJAdjustFactory.h"
 #import "ADJLoggerMock.h"
 #import "NSURLConnection+NSURLConnectionSynchronousLoadingMocking.h"
+#import "NSURLSession+NSURLDataWithRequestMocking.h"
 #import "ADJTestsUtil.h"
 #import "ADJActivityHandlerMock.h"
 #import "ADJAttributionHandlerMock.h"
@@ -88,10 +89,10 @@
     //  reseting to make the test order independent
     [self reset];
 
-    id<ADJAttributionHandler> attributionHandler = [ADJAttributionHandler handlerWithActivityHandler:self.activityHandlerMock withAttributionPackage:self.attributionPackage startPaused:NO hasDelegate:YES];
+    id<ADJAttributionHandler> attributionHandler = [ADJAttributionHandler handlerWithActivityHandler:self.activityHandlerMock withAttributionPackage:self.attributionPackage startPaused:NO hasAttributionChangedDelegate:YES];
 
     // test null response without error
-    [self checkGetAttributionResponse:attributionHandler responseType:ADJResponseTypeNil];
+    [self checkGetAttributionResponse:attributionHandler responseType:ADJSessionResponseTypeNil];
 
     // check empty error
     aError(@"Failed to get attribution (empty error)");
@@ -100,32 +101,32 @@
     anVerbose(@"Response");
 
     // test client exception
-    [self checkGetAttributionResponse:attributionHandler responseType:ADJResponseTypeConnError];
+    [self checkGetAttributionResponse:attributionHandler responseType:ADJSessionResponseTypeConnError];
 
     // check the client error
     aError(@"Failed to get attribution (connection error)");
 
     // test wrong json response
-    [self checkGetAttributionResponse:attributionHandler responseType:ADJResponseTypeWrongJson];
+    [self checkGetAttributionResponse:attributionHandler responseType:ADJSessionResponseTypeWrongJson];
 
     aVerbose(@"Response: not a json response");
 
     aError(@"Failed to parse json response. (The data couldn’t be read because it isn’t in the correct format.)");
 
     // test empty response
-    [self checkGetAttributionResponse:attributionHandler responseType:ADJResponseTypeEmptyJson];
+    [self checkGetAttributionResponse:attributionHandler responseType:ADJSessionResponseTypeEmptyJson];
 
     aVerbose(@"Response: { }");
 
     aInfo(@"No message found");
 
-    // check attribution was called without ask_in
-    aTest(@"ActivityHandler updateAttribution, (null)");
-
     aTest(@"ActivityHandler setAskingAttribution, 0");
 
+    // check attribution was called without ask_in
+    aTest(@"ActivityHandler launchAttributionTasks, message:(null) timestamp:(null) json:{\n}");
+
     // test server error
-    [self checkGetAttributionResponse:attributionHandler responseType:ADJResponseTypeServerError];
+    [self checkGetAttributionResponse:attributionHandler responseType:ADJSessionResponseTypeServerError];
 
     // the response logged
     aVerbose(@"Response: { \"message\": \"testResponseError\"}");
@@ -133,13 +134,13 @@
     // the message in the response
     aError(@"testResponseError");
 
-    // check attribution was called without ask_in
-    aTest(@"ActivityHandler updateAttribution, (null)");
-
     aTest(@"ActivityHandler setAskingAttribution, 0");
 
+    // check attribution was called without ask_in
+    aTest(@"ActivityHandler launchAttributionTasks, message:testResponseError timestamp:(null) json:{\n    message = testResponseError;\n}");
+
     // test ok response with message
-    [self checkGetAttributionResponse:attributionHandler responseType:ADJResponseTypeMessage];
+    [self checkGetAttributionResponse:attributionHandler responseType:ADJSessionResponseTypeMessage];
 
     [self checkOkMessageGetAttributionResponse];
 }
@@ -149,7 +150,7 @@
     //  reseting to make the test order independent
     [self reset];
 
-    id<ADJAttributionHandler> attributionHandler = [ADJAttributionHandler handlerWithActivityHandler:self.activityHandlerMock withAttributionPackage:self.attributionPackage startPaused:NO hasDelegate:YES];
+    id<ADJAttributionHandler> attributionHandler = [ADJAttributionHandler handlerWithActivityHandler:self.activityHandlerMock withAttributionPackage:self.attributionPackage startPaused:NO hasAttributionChangedDelegate:YES];
 
     NSMutableDictionary * attributionDictionary = [[NSMutableDictionary alloc] init];
     [attributionDictionary setObject:@"ttValue" forKey:@"tracker_token"];
@@ -163,7 +164,7 @@
     NSMutableDictionary * jsonDictionary = [[NSMutableDictionary alloc] init];
     [jsonDictionary setObject:attributionDictionary forKey:@"attribution"];
 
-    [attributionHandler checkAttribution:jsonDictionary];
+    [attributionHandler checkResponse:nil];
     [NSThread sleepForTimeInterval:1.0];
 
     // check attribution was called without ask_in
@@ -184,7 +185,7 @@
     //  reseting to make the test order independent
     [self reset];
 
-    id<ADJAttributionHandler> attributionHandler = [ADJAttributionHandler handlerWithActivityHandler:self.activityHandlerMock withAttributionPackage:self.attributionPackage startPaused:NO hasDelegate:YES];
+    id<ADJAttributionHandler> attributionHandler = [ADJAttributionHandler handlerWithActivityHandler:self.activityHandlerMock withAttributionPackage:self.attributionPackage startPaused:NO hasAttributionChangedDelegate:YES];
 
     NSMutableDictionary * askIn4sDictionary = [[NSMutableDictionary alloc] init];
     [askIn4sDictionary setObject:@"4000" forKey:@"ask_in"];
@@ -192,7 +193,7 @@
     // set null response to avoid a cycle;
     [NSURLConnection setResponseType:ADJResponseTypeMessage];
 
-    [attributionHandler checkAttribution:askIn4sDictionary];
+    [attributionHandler checkResponse:nil];
 
     // sleep enough not to trigger the timer
     [NSThread sleepForTimeInterval:1.0];
@@ -212,7 +213,7 @@
     NSMutableDictionary * askIn5sDictionary = [[NSMutableDictionary alloc] init];
     [askIn5sDictionary setObject:@"5000" forKey:@"ask_in"];
 
-    [attributionHandler checkAttribution:askIn5sDictionary];
+    [attributionHandler checkResponse:nil];
 
     // sleep enough not to trigger the old timer
     [NSThread sleepForTimeInterval:3.0];
@@ -243,7 +244,7 @@
     //  reseting to make the test order independent
     [self reset];
 
-    id<ADJAttributionHandler> attributionHandler = [ADJAttributionHandler handlerWithActivityHandler:self.activityHandlerMock withAttributionPackage:self.attributionPackage startPaused:YES hasDelegate:YES];
+    id<ADJAttributionHandler> attributionHandler = [ADJAttributionHandler handlerWithActivityHandler:self.activityHandlerMock withAttributionPackage:self.attributionPackage startPaused:YES hasAttributionChangedDelegate:YES];
 
     [NSURLConnection setResponseType:ADJResponseTypeMessage];
 
@@ -266,7 +267,7 @@
     //  reseting to make the test order independent
     [self reset];
 
-    id<ADJAttributionHandler> attributionHandler = [ADJAttributionHandler handlerWithActivityHandler:self.activityHandlerMock withAttributionPackage:self.attributionPackage startPaused:NO hasDelegate:NO];
+    id<ADJAttributionHandler> attributionHandler = [ADJAttributionHandler handlerWithActivityHandler:self.activityHandlerMock withAttributionPackage:self.attributionPackage startPaused:NO hasAttributionChangedDelegate:NO];
 
     [NSURLConnection setResponseType:ADJResponseTypeMessage];
 
@@ -292,24 +293,25 @@
     aInfo(@"response OK");
 
     // check attribution was called without ask_in
-    aTest(@"ActivityHandler updateAttribution, (null)");
-
     aTest(@"ActivityHandler setAskingAttribution, 0");
+
+    aTest(@"ActivityHandler launchAttributionTasks, message:response OK timestamp:(null) json:{\n    message = \"response OK\";\n}");
 }
 
 - (void)checkGetAttributionResponse:(id<ADJAttributionHandler>) attributionHandler
-                       responseType:(ADJResponseType)responseType
+                       responseType:(ADJSessionResponseType)responseType
 {
-    [NSURLConnection setResponseType:responseType];
+    //[NSURLConnection setResponseType:responseType];
+    [NSURLSession setResponseType:responseType];
 
     [attributionHandler getAttribution];
-    [NSThread sleepForTimeInterval:1.0];
+    [NSThread sleepForTimeInterval:2.0];
 
     // delay time is 0
     anDebug(@"Waiting to query attribution");
 
     // it tried to send the request
-    aTest(@"NSURLConnection sendSynchronousRequest");
+    aTest(@"NSURLSession dataTaskWithRequest");
 
     [self checkRequest:[NSURLConnection getLastRequest]];
 }

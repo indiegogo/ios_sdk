@@ -90,13 +90,13 @@ typedef enum {
     aTest(@"RequestHandler sendPackage, clickFirstPackage");
 
     // send the second click package/ third package
-    [secondPackageHandler sendNextPackage];
+    [secondPackageHandler sendNextPackage:nil];
     [NSThread sleepForTimeInterval:1.0];
 
     aTest(@"RequestHandler sendPackage, clickThirdPackage");
 
     // send the unknow package/ second package
-    [secondPackageHandler sendNextPackage];
+    [secondPackageHandler sendNextPackage:nil];
     [NSThread sleepForTimeInterval:1.0];
 
     aTest(@"RequestHandler sendPackage, unknownSecondPackage");
@@ -166,7 +166,7 @@ typedef enum {
     [self checkAddSecondPackage:packageHandler];
 
     //send next package
-    [packageHandler sendNextPackage];
+    [packageHandler sendNextPackage:nil];
     [NSThread sleepForTimeInterval:2.0];
 
     aDebug(@"Package handler wrote 1 packages");
@@ -192,7 +192,7 @@ typedef enum {
     [self checkSendFirst:ADJSendFirstIsSending];
 
     //send next package
-    [packageHandler closeFirstPackage];
+    [packageHandler closeFirstPackage:nil];
     [NSThread sleepForTimeInterval:2.0];
 
     anDebug(@"Package handler wrote");
@@ -222,7 +222,7 @@ typedef enum {
 
     [self checkSendFirst:ADJSendFirstPaused];
 
-    [packageHandler finishedTracking:nil];
+    //[packageHandler finishedTracking:nil];
 
     aTest(@"ActivityHandler finishedTracking, (null)");
 }

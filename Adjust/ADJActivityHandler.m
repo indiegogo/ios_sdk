@@ -283,12 +283,8 @@ remainsPausedMessage:(NSString *)remainsPausedMessage
         [self.logger warn:@"Unable to read iAd details"];
 
         if (retriesLeft < 0) {
-            [self.logger error:@"Reached limit number of retry for iAd"];
+            [self.logger error:@"Limit number of retry for iAd v3 surpassed"];
             return;
-        }
-
-        if (retriesLeft == 0) {
-            [self.logger error:@"Reached limit number of retry for iAd, trying iAd v2"];
         }
 
         if (error.code == AdjADClientErrorUnknown) {
@@ -315,27 +311,6 @@ remainsPausedMessage:(NSString *)remainsPausedMessage
 
     ADJActivityPackage *clickPackage = [clickBuilder buildClickPackage:@"iad3"];
     [self.packageHandler addPackage:clickPackage];
-}
-
-- (SEL)updateAttribution:(ADJAttribution *)attribution {
-    if (attribution == nil) {
-        return nil;
-    }
-    if ([attribution isEqual:self.attribution]) {
-        return nil;
-    }
-    self.attribution = attribution;
-    [self writeAttribution];
-
-    if (self.adjustDelegate == nil) {
-        return nil;
-    }
-
-    if (![self.adjustDelegate respondsToSelector:@selector(adjustAttributionChanged:)]) {
-        return nil;
-    }
-
-    return @selector(adjustAttributionChanged:);
 }
 
 - (void)setAskingAttribution:(BOOL)askingAttribution {
@@ -518,18 +493,39 @@ remainsPausedMessage:(NSString *)remainsPausedMessage
 }
 
 - (void) launchAttributionTasksInternal:(ADJResponseData *)responseData {
-    SEL updateAttributionSEL = [self updateAttribution:responseData.attribution];
+    BOOL launchAttributionCallback = [self updateAttribution:responseData.attribution];
 
     dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
         // try to update and launch the attribution changed listener
-        if (updateAttributionSEL != nil) {
-            [self.adjustDelegate performSelectorOnMainThread:updateAttributionSEL
+        if (launchAttributionCallback) {
+            [self.adjustDelegate performSelectorOnMainThread:@selector(adjustAttributionChanged:)
                                                   withObject:responseData.attribution
                                                waitUntilDone:YES];
         }
         // in last, try to launch the deeplink
         [self launchDeepLink:responseData.jsonResponse];
     });
+}
+
+- (BOOL)updateAttribution:(ADJAttribution *)attribution {
+    if (attribution == nil) {
+        return NO;
+    }
+    if ([attribution isEqual:self.attribution]) {
+        return NO;
+    }
+    self.attribution = attribution;
+    [self writeAttribution];
+
+    if (self.adjustDelegate == nil) {
+        return NO;
+    }
+
+    if (![self.adjustDelegate respondsToSelector:@selector(adjustAttributionChanged:)]) {
+        return NO;
+    }
+
+    return YES;
 }
 
 - (void) launchFinishedDelegate:(ADJResponseData *)responseData {
@@ -547,6 +543,7 @@ remainsPausedMessage:(NSString *)remainsPausedMessage
     if (responseData.success
         && [self.adjustDelegate respondsToSelector:@selector(adjustTrackingSucceeded:)])
     {
+        [self.logger debug:@"Launching success tracking delegate"];
         [self.adjustDelegate performSelectorOnMainThread:@selector(adjustTrackingSucceeded:)
                                               withObject:[responseData successResponseData]
                                            waitUntilDone:YES];
@@ -556,6 +553,7 @@ remainsPausedMessage:(NSString *)remainsPausedMessage
     if (!responseData.success
         && [self.adjustDelegate respondsToSelector:@selector(adjustTrackingFailed:)])
     {
+        [self.logger debug:@"Launching failed tracking delegate"];
         [self.adjustDelegate performSelectorOnMainThread:@selector(adjustTrackingFailed:)
                                               withObject:[responseData failureResponseData]
                                            waitUntilDone:YES];

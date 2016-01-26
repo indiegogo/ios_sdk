@@ -55,11 +55,11 @@ static NSString * const prefix = @"PackageHandler ";
     [self.loggerMock test:[prefix stringByAppendingString:@"sendFirstPackage"]];
 }
 
-- (void)sendNextPackage {
+- (void)sendNextPackage:(ADJResponseData *)responseData {
     [self.loggerMock test:[prefix stringByAppendingString:@"sendNextPackage"]];
 }
 
-- (void)closeFirstPackage {
+- (void)closeFirstPackage:(ADJResponseData *)responseData {
     [self.loggerMock test:[prefix stringByAppendingString:@"closeFirstPackage"]];
 }
 
